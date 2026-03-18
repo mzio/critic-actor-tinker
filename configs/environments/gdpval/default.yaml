@@ -1,0 +1,30 @@
+name: "gdpval"
+is_async: false
+cache_dir: "/scr/mzhang/data/gdpval_cache"
+
+num_train_samples: 180
+num_eval_samples: 40
+max_turns: 30
+code_timeout_sec: 60
+
+# Grader LLM config — max_output_tokens here controls the OpenAI API limit.
+# The GDPvalGrader also has its own max_new_tokens (default 4096) passed to
+# sample(); the lower of the two applies.
+grader_model_config:
+  name: openai
+  model_config:
+    model: gpt-4o
+    use_vision: false
+    generation_config:
+      max_output_tokens: 4096
+      temperature: 0
+
+grader_batch_criteria: true
+
+negative_rewards: false
+hide_observations: false
+data_seed: 0
+split: "train"
+eval_splits: ["eval"]
+num_tries: 1
+eval_num_tries: 1

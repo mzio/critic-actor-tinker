@@ -1,0 +1,10 @@
+# Default Tinker Generator
+name: "default"
+enable_thinking: null
+
+discount_factor: 0.9
+mean_center: false
+
+verbose: false
+streamer: false
+debug: false

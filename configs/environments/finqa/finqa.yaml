@@ -1,0 +1,36 @@
+# Snorkel Finance - Quantitative QA Benchmark
+# 290 quantitative financial questions with \boxed{numeric} answers
+# Reference: https://github.com/snorkel-ai/FinQABenchmark
+name: "snorkel_finance"
+is_async: false
+
+task: "finqa"
+benchmark_csv: "./data/snorkel_finance/benchmark/finqa.csv"
+data_path: "./data/snorkel_finance/raw"
+
+grader_model_config:
+  name: "claude_query"
+  model_config:
+    model: "claude-sonnet-4-6"
+grader_model_samples: 1
+grader_model_verbose: false
+
+hide_observations: false
+hidden_obs_content: "..."
+first_obs_to_show: 2
+last_obs_to_show: 1
+
+num_fewshot_prompts: 0
+# 290 total: 174 train / 58 val / 58 test
+num_train_samples: 174
+num_val_samples: 58
+num_test_samples: 58
+
+max_turns: 50
+num_tries: 1
+eval_num_tries: 1
+seed: 0
+split: "train"
+system_prompt: null  # uses finqa default from prompts.py
+truncation_message: "Sorry, you have reached the maximum number of steps. Please try again."
+verbose: false
