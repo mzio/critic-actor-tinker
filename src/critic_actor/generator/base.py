@@ -205,11 +205,25 @@ class TinkerGenerator:
                 temperature=temperature,
                 stop=llm.stop_condition,  # tinker_cookbook.renders.Renderer
             )
-            response: SampleResponse = await llm.sampling_client.sample_async(
-                prompt=state_tinker_input,
-                num_samples=1,
-                sampling_params=sampling_params,
-            )
+            try:
+                response: SampleResponse = await asyncio.wait_for(
+                    llm.sampling_client.sample_async(
+                        prompt=state_tinker_input,
+                        num_samples=1,
+                        sampling_params=sampling_params,
+                    ),
+                    timeout=120,  # 2 minute timeout per sample
+                )
+            except asyncio.TimeoutError:
+                logger.error("Tinker sample_async timed out after 120s, retrying...")
+                response: SampleResponse = await asyncio.wait_for(
+                    llm.sampling_client.sample_async(
+                        prompt=state_tinker_input,
+                        num_samples=1,
+                        sampling_params=sampling_params,
+                    ),
+                    timeout=120,
+                )
             # Extract tokens and logprobs from the first (and only) sample
             sampled_tokens: list[int] = response.sequences[0].tokens
             sampled_logprobs: list[float] = response.sequences[0].logprobs
