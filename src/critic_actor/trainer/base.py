@@ -92,6 +92,9 @@ class TinkerTrainer(ABC):
         self.best_metric_name = cfg.best_metric
         self.best_metric_step = -1
 
+        # Cumulative cost tracking across all generator instances
+        self._cumulative_cost_usd: float = 0.0
+
         self.run_name = cfg.run_name
         self.run_url = ml_logger.get_logger_url() if ml_logger is not None else None
         self.run_cmd = f"uv run {' '.join(sys.argv)}"
@@ -424,6 +427,13 @@ class TinkerTrainer(ABC):
         for k in keys_for_correct:
             total_v = final_metrics[k.replace("correct", "total")]
             final_metrics[k.replace("correct", "accuracy")] = final_metrics[k] / total_v
+
+        # Pull cost metrics from generator if available
+        if hasattr(tinker_generator, "get_cost_metrics"):
+            cost_metrics = tinker_generator.get_cost_metrics()
+            self._cumulative_cost_usd += cost_metrics.get("cost/batch_usd", 0)
+            cost_metrics["cost/cumulative_usd"] = self._cumulative_cost_usd
+            final_metrics.update(cost_metrics)
 
         return final_metrics, new_trajectories
 

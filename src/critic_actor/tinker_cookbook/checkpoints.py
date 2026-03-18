@@ -15,6 +15,8 @@ from .utils import timed
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_TTL_SECONDS = 86400  # keep checkpoints on Tinker for 1 day
+
 
 # Modified from https://github.com/thinking-machines-lab/tinker-cookbook/blob/f1daee9d1ce0a8102e0e0ed8151f99d98919a503/tinker_cookbook/checkpoint_utils.py#L233
 async def save_checkpoint_async(
@@ -23,20 +25,23 @@ async def save_checkpoint_async(
     log_path: str,
     loop_state: dict[str, Any],
     kind: Literal["state", "sampler", "both"] = "state",
+    ttl_seconds: int | None = _DEFAULT_TTL_SECONDS,
 ) -> dict[str, str]:
     """Save model checkpoint.
     Args:
         training_client: Training client to save from
         name: Name for the checkpoint
         log_path: Path to the log directory, where we can find checkpoints.jsonl file
+        ttl_seconds: Time-to-live in seconds before auto-deletion (default: 1 day, None = forever)
     Returns:
         Path to the saved checkpoint
     """
+    ttl_kwargs = {"ttl_seconds": ttl_seconds} if ttl_seconds is not None else {}
     futures = {}
     if kind in ["state", "both"]:
-        futures["state"] = await training_client.save_state_async(name)
+        futures["state"] = await training_client.save_state_async(name, **ttl_kwargs)
     if kind in ["sampler", "both"]:
-        futures["sampler"] = await training_client.save_weights_for_sampler_async(name)
+        futures["sampler"] = await training_client.save_weights_for_sampler_async(name, **ttl_kwargs)
 
     # results = {k: await v.result_async() for k, v in futures.items()}
     results = await asyncio.gather(*(v.result_async() for v in futures.values()))
