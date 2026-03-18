@@ -2,10 +2,14 @@
 Helper functions for Critic-Actor on top of the Claude Agent SDK
 """
 
+import asyncio
 import json
+import logging
 from typing import Any
 
 from rich import print as rich_print
+
+logger = logging.getLogger(__name__)
 
 from claude_agent_sdk import (
     ClaudeSDKClient,
@@ -84,14 +88,11 @@ def get_prompt_from_messages(
     return delimiter.join(parts)
 
 
-async def sample_client_response(
+async def _sample_client_response_impl(
     client: ClaudeSDKClient,
     prompt: str,
-    **kwargs: Any,
-) -> list[ClaudeAgentResponse]:
-    """
-    Sample a response from the Claude Agent SDK client
-    """
+) -> ClaudeAgentResponse:
+    """Inner implementation without timeout."""
     response = ClaudeAgentResponse()
     await client.query(prompt)
 
@@ -108,6 +109,25 @@ async def sample_client_response(
             if getattr(msg, "total_cost_usd", None):
                 response.cost = msg.total_cost_usd
     return response
+
+
+async def sample_client_response(
+    client: ClaudeSDKClient,
+    prompt: str,
+    timeout: float = 120,
+    **kwargs: Any,
+) -> ClaudeAgentResponse:
+    """
+    Sample a response from the Claude Agent SDK client, with timeout.
+    """
+    try:
+        return await asyncio.wait_for(
+            _sample_client_response_impl(client, prompt),
+            timeout=timeout,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Claude SDK sample timed out after %.0fs, returning empty response", timeout)
+        return ClaudeAgentResponse()
 
 
 def get_actions_from_response(
