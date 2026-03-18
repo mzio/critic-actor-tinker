@@ -247,6 +247,11 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                             truncated = True
                             break
                         
+                # If max retry attempts exhausted, just end the episode with existing steps
+                if done and len(cria_actions) == 0:
+                    logger.warning("Max retry attempts reached, ending episode early")
+                    break
+
                 # First format each potential action into standard assistant messages chat
                 _assistant_template = "{reasoning}\n\n{tool_call}"
                 assistant_messages: list[list[dict[str, str]]] = [
