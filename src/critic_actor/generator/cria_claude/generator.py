@@ -318,7 +318,13 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                 # Wrap each in try/except to handle context window overflow gracefully
                 async def _safe_logprobs(idx: int) -> list[float] | None:
                     try:
-                        return await llm.compute_logprobs_async(tinker_cria_completion_ids[idx])
+                        return await asyncio.wait_for(
+                            llm.compute_logprobs_async(tinker_cria_completion_ids[idx]),
+                            timeout=120,
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning("Action %d compute_logprobs timed out after 120s", idx)
+                        return None
                     except Exception as e:
                         if "context window" in str(e) or "max_tokens" in str(e):
                             logger.warning("Action %d exceeds context window, skipping: %s", idx, e)
