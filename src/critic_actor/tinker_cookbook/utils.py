@@ -64,6 +64,7 @@ def split_list(lst: Sequence[T], num_splits: int) -> list[list[T]]:
 # Modified from https://github.com/thinking-machines-lab/tinker-cookbook/blob/22483a6b04400f79da13557a8229bc98b309b026/tinker_cookbook/rl/train.py#L53
 async def gather_with_progress(
     coroutines: Iterable[Coroutine[Any, Any, T]],
+    per_task_timeout: float | None = 600,  # 10 min default per task
     **pbar_kwargs: Any,
 ) -> list[T]:
     """
@@ -71,17 +72,28 @@ async def gather_with_progress(
 
     This preserves the order of results (like asyncio.gather) while providing
     real-time progress feedback as individual coroutines complete.
+
+    If per_task_timeout is set, individual tasks that exceed it are cancelled
+    and return None.
     """
     coroutine_list = list(coroutines)
     pbar = tqdm(total=len(coroutine_list), **pbar_kwargs)
 
-    async def track(coro: Coroutine[Any, Any, T]) -> T:
-        result = await coro
-        pbar.update(1)
-        return result
+    async def track(idx: int, coro: Coroutine[Any, Any, T]) -> T | None:
+        try:
+            if per_task_timeout is not None:
+                result = await asyncio.wait_for(coro, timeout=per_task_timeout)
+            else:
+                result = await coro
+            pbar.update(1)
+            return result
+        except asyncio.TimeoutError:
+            logger.warning("Task %d timed out after %.0fs, skipping", idx, per_task_timeout)
+            pbar.update(1)
+            return None
 
     try:
-        results = await asyncio.gather(*[track(coro) for coro in coroutine_list])
+        results = await asyncio.gather(*[track(i, coro) for i, coro in enumerate(coroutine_list)])
     finally:
         pbar.close()
 

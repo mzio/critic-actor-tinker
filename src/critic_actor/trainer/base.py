@@ -383,8 +383,13 @@ class TinkerTrainer(ABC):
                 ),
                 position=pbar_position,
             )
+            # Filter out None results (timed-out tasks)
+            all_trajectory_groups = [tg for tg in all_trajectory_groups if tg is not None]
+            if not all_trajectory_groups:
+                logger.warning("All tasks timed out in this batch, skipping")
+                continue
+
             # Save metrics and samples
-            # trajectory_keys = all_trajectory_groups[0].keys()
             _rollout_types = all_trajectory_groups[0].keys()  # e.g., ["policy", "icl"]
             _metric_prefix = f"{checkpoint_name}_{split}" if checkpoint_name is not None else split
 
