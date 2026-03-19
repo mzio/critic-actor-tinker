@@ -241,7 +241,7 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                             "role": "user", "content": content
                         })
                         num_attempts += 1
-                        if num_attempts >= 10:
+                        if num_attempts >= 3:
                             done = True
                             reward = -1.0
                             truncated = True
