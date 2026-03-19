@@ -315,15 +315,31 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                     ModelInput.from_ints(_input_ids) for _input_ids in cria_completion_ids
                 ]
                 # Compute logprobs for all critic-actor completions
+                # Wrap each in try/except to handle context window overflow gracefully
+                async def _safe_logprobs(idx: int) -> list[float] | None:
+                    try:
+                        return await llm.compute_logprobs_async(tinker_cria_completion_ids[idx])
+                    except Exception as e:
+                        if "context window" in str(e) or "max_tokens" in str(e):
+                            logger.warning("Action %d exceeds context window, skipping: %s", idx, e)
+                            return None
+                        raise
+
                 all_complete_logprobs = await asyncio.gather(*[
-                    llm.compute_logprobs_async(tinker_cria_completion_ids[_idx])
-                    for _idx in range(self.num_actions)
+                    _safe_logprobs(_idx) for _idx in range(self.num_actions)
                 ])
-                # Select action based on highest logprob
+                # Select action based on highest logprob (-inf for failed candidates)
                 all_cls_logprobs = [
                     np.array(logprobs)[cria_prefix_len:].mean().item()
+                    if logprobs is not None else -float("inf")
                     for logprobs in all_complete_logprobs
                 ]
+                # If ALL candidates failed, end the episode
+                if all(lp == -float("inf") for lp in all_cls_logprobs):
+                    logger.warning("All action candidates exceed context window, ending episode")
+                    done = True
+                    truncated = True
+                    break
                 best_choice_idx = np.argmax(all_cls_logprobs)
                 model_messages = assistant_messages[best_choice_idx]
                 parsed_actions = get_actions(model_messages)
