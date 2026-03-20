@@ -64,7 +64,7 @@ def split_list(lst: Sequence[T], num_splits: int) -> list[list[T]]:
 # Modified from https://github.com/thinking-machines-lab/tinker-cookbook/blob/22483a6b04400f79da13557a8229bc98b309b026/tinker_cookbook/rl/train.py#L53
 async def gather_with_progress(
     coroutines: Iterable[Coroutine[Any, Any, T]],
-    per_task_timeout: float | None = 300,  # 10 min default per task
+    per_task_timeout: float | None = None,  # 300,  # 10 min default per task
     **pbar_kwargs: Any,
 ) -> list[T]:
     """
