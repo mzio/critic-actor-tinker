@@ -433,13 +433,13 @@ class TinkerGenerator:
             )
         ]
 
-        # Save replay buffer samples to disk
-        if self.last_replay_buffer_path is not None:
-            for trajectory_group in all_trajectory_groups:  # singleton
-                for trajectory in trajectory_group.trajectories:
-                    self.replay_buffer.add_trajectory(trajectory)
-            self.replay_buffer.save_to_hf_dataset(self.last_replay_buffer_path)
-            logger.info("Saved last replay buffer to %s", self.last_replay_buffer_path)
-
+#        # Save replay buffer samples to disk
+#        if self.last_replay_buffer_path is not None:
+#            for trajectory_group in all_trajectory_groups:  # singleton
+#                for trajectory in trajectory_group.trajectories:
+#                    self.replay_buffer.add_trajectory(trajectory)
+#            self.replay_buffer.save_to_hf_dataset(self.last_replay_buffer_path)
+#            logger.info("Saved last replay buffer to %s", self.last_replay_buffer_path)
+#
         # Sometimes we may want different trajectories to evaluate vs train on
         return {"policy": all_trajectory_groups}

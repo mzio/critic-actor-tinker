@@ -133,6 +133,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 --no_cria_prompt \
+--no_train \
 --eval_every 10 --max_turns 10 \
 --seed 42 --replicate 1 --verbose 
 
@@ -219,6 +220,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 --no_cria_prompt \
+--no_train \
 --eval_every 10 --max_turns 20 \
 --seed 42 --replicate 1 --verbose 
 

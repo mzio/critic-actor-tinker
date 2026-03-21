@@ -419,6 +419,12 @@ class TinkerTrainer(ABC):
                             # Add trajectory to list of new trajectories
                             new_trajectories[_type].append(trajectory)
 
+                            if _type == "policy":
+                                # (potentially redundant with prepare_minibatch)
+                                self.replay_buffer.add_trajectory(trajectory)
+                # Save replay buffer after each try
+                self.save_replay_buffer(replay_buffer=self.replay_buffer, best=False)
+
         final_metrics = {}  # return these metrics for the batch
         # 1. Compute aggregate metrics
         for k, v in all_eval_metrics.items():

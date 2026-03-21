@@ -58,7 +58,7 @@ POLICY_HANDOFF_INSTRUCTION = """
 Now, you are handing off this task to a colleague who will execute the next step.
 Write a short, structured handoff note so they can act immediately.
 
-Your note may contain any of the following:
+Your final note should be structured and contain any of the following:
 1. **Situation** — one or two sentences summarizing where things stand right now
    (what the task is, what has already been done, what the key outcomes from the last response were).
 2. **Key Findings** — bullet the most important facts, numbers, or observations
@@ -67,7 +67,7 @@ Your note may contain any of the following:
    Be specific enough that your colleague can act without re-reading the full conversation.
 4. **Reframing** - reframe the system prompt to be more helpful, or synthesize any past tries and their outcomes into actionable advice.
 
-Think and reason about how to provide the best handoff note. Remember it should be concise (<100 words). 
+Think and reason about how to provide the best handoff note.
 
 Then include your final handoff note in the following format:
 <final_response>
