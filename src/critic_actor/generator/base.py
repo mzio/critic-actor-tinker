@@ -35,6 +35,17 @@ logger = logging.getLogger(__name__)
 ROYGBIV = ["#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3"]
 DEBUG_COLS = ["batch_id", "split", "try_step", "generation_id", "unique_data_sample_id"]
 
+# Default context window size for the policy model (Qwen3-4B = 32768)
+DEFAULT_CONTEXT_WINDOW = 32768
+# Minimum tokens to reserve for generation; if fewer are available, skip the step
+MIN_GENERATION_TOKENS = 64
+
+
+def _is_context_window_error(exc: Exception) -> bool:
+    """Check if an exception is a context-window overflow from Tinker."""
+    msg = str(exc).lower()
+    return "context window" in msg or "max_tokens" in msg
+
 
 class TinkerGenerator:
     """
@@ -58,6 +69,7 @@ class TinkerGenerator:
         last_generated_data_url: str | None = None,
         last_replay_buffer_path: str | None = None,
         debug: bool = False,
+        context_window: int = DEFAULT_CONTEXT_WINDOW,
     ) -> None:
         self.llm = llm
         self.hf_tokenizer = hf_tokenizer
@@ -85,6 +97,7 @@ class TinkerGenerator:
         )
         self.verbose = verbose
         self.debug = debug
+        self.context_window = context_window
 
     def _init_identifiers(self) -> tuple[str | None, str | None]:
         """
@@ -197,11 +210,30 @@ class TinkerGenerator:
                 tokenize=True,
                 return_dict=False,
             )
+
+            # --- Context window guard (generation) ---
+            effective_max_tokens = max_tokens
+            if len(state_ids) + effective_max_tokens > self.context_window:
+                available = self.context_window - len(state_ids)
+                if available < MIN_GENERATION_TOKENS:
+                    logger.warning(
+                        "Prompt is %d tokens, only %d left (need %d) — "
+                        "ending episode at timestep %d",
+                        len(state_ids), available, MIN_GENERATION_TOKENS, state.timestep,
+                    )
+                    truncated = True
+                    break
+                logger.warning(
+                    "Prompt is %d tokens; reducing max_tokens %d → %d to fit context window",
+                    len(state_ids), effective_max_tokens, available,
+                )
+                effective_max_tokens = available
+
             state_tinker_input: ModelInput = ModelInput.from_ints(state_ids)
             # Generate response (being explicit here instead of using the handler)
             renderer: Renderer = llm.renderer
             sampling_params = SamplingParams(
-                max_tokens=max_tokens,
+                max_tokens=effective_max_tokens,
                 temperature=temperature,
                 stop=llm.stop_condition,  # tinker_cookbook.renders.Renderer
             )
@@ -224,6 +256,16 @@ class TinkerGenerator:
                     ),
                     timeout=120,
                 )
+            except Exception as e:
+                if _is_context_window_error(e):
+                    logger.warning(
+                        "Context window exceeded during generation at timestep %d: %s",
+                        state.timestep, e,
+                    )
+                    truncated = True
+                    break
+                raise
+
             # Extract tokens and logprobs from the first (and only) sample
             sampled_tokens: list[int] = response.sequences[0].tokens
             sampled_logprobs: list[float] = response.sequences[0].logprobs
@@ -243,8 +285,30 @@ class TinkerGenerator:
                 tokenize=True,
                 return_dict=False,
             )
+
+            # --- Context window guard (logprobs) ---
+            if len(state_action_ids) > self.context_window:
+                logger.warning(
+                    "state+action is %d tokens (context_window=%d) — "
+                    "ending episode at timestep %d",
+                    len(state_action_ids), self.context_window, state.timestep,
+                )
+                truncated = True
+                break
+
             state_action_tinker_input = ModelInput.from_ints(state_action_ids)
-            all_logprobs = await llm.compute_logprobs_async(state_action_tinker_input)
+            try:
+                all_logprobs = await llm.compute_logprobs_async(state_action_tinker_input)
+            except Exception as e:
+                if _is_context_window_error(e):
+                    logger.warning(
+                        "Context window exceeded during logprobs at timestep %d: %s",
+                        state.timestep, e,
+                    )
+                    truncated = True
+                    break
+                raise
+
             # DEBUGGING
             assert len(all_logprobs) == len(state_action_ids) and all_logprobs[0] is None, (
                 "tinker all_logprobs[0] should be None and match length of state_action_ids."
