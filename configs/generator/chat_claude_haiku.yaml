@@ -2,6 +2,7 @@
 # that is injected into Claude's prompt to guide its action.
 name: "chat_claude"
 prompt_template_name: "chat"
+no_cria_prompt: false
 
 # Claude Agent SDK options
 model: "claude-haiku-4-5"

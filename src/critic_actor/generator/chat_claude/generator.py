@@ -131,6 +131,7 @@ class ChatClaudeGenerator(TinkerGenerator):
         max_agent_turns: int | None = 1,
         # Tinker options
         tinker_timeout: int = 300,
+        no_cria_prompt: bool = False,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -159,6 +160,8 @@ class ChatClaudeGenerator(TinkerGenerator):
 
         # Tinker
         self.tinker_timeout = tinker_timeout
+        self.no_cria_prompt = no_cria_prompt
+
 
     def get_cost_metrics(self) -> dict[str, float]:
         """Return cost metrics and reset batch cost."""
@@ -310,7 +313,7 @@ class ChatClaudeGenerator(TinkerGenerator):
         self,
         client: ClaudeSDKClient,
         new_messages: list[dict[str, Any]],
-        policy_text: str,
+        policy_text: str | None,
         sample_id: int,
     ) -> tuple[list[dict[str, str]], ClaudeAgentResponse]:
         """
@@ -322,9 +325,12 @@ class ChatClaudeGenerator(TinkerGenerator):
         """
         # Prepend policy chat message to the per-turn prompt
         # chat_prefix = get_claude_chat_prefix(chat_text, name=self.prompt_template_name)
-        conversation_prompt = get_prompt_from_messages(new_messages)
-        chat_suffix = CLAUDE_HANDOFF_PREFIX_CHAT.format(policy_text=policy_text)
-        claude_prompt = f"{conversation_prompt}\n\n{chat_suffix}"
+        if policy_text is not None:
+            conversation_prompt = get_prompt_from_messages(new_messages)
+            chat_suffix = CLAUDE_HANDOFF_PREFIX_CHAT.format(policy_text=policy_text)
+            claude_prompt = f"{conversation_prompt}\n\n{chat_suffix}"
+        else:
+            claude_prompt = get_prompt_from_messages(new_messages)
 
         num_attempts = 0
         while num_attempts < 10:
@@ -423,59 +429,67 @@ class ChatClaudeGenerator(TinkerGenerator):
                 )  # Can extend this with retrieval from past actions
 
                 # 2. Policy LLM generates a chat message (tip / reflection)
-                # Process all_messages for our policy LLM
-                assert all_messages[-1] == new_messages[0], (
-                    "Expected last message in all_messages to match new_messages[0]"
-                )
-                # _all_messages = deepcopy(all_messages[:-1]) if len(all_messages) > 1 else []
-                if len(all_messages) == 1:
-                    _all_messages = []  # First prompt, instruction is in policy_system_prompt
-                else:
-                    # Swap user and assistant roles for policy LLM
-                    _all_messages = deepcopy(all_messages)
-                    _all_messages = [
-                        {"role": "user" if msg["role"] == "assistant" else msg["role"], "content": msg["content"]}
-                        for msg in _all_messages
+                if not self.no_cria_prompt:
+                    # Process all_messages for our policy LLM
+                    assert all_messages[-1] == new_messages[0], (
+                        "Expected last message in all_messages to match new_messages[0]"
+                    )
+                    # _all_messages = deepcopy(all_messages[:-1]) if len(all_messages) > 1 else []
+                    if len(all_messages) == 1:
+                        _all_messages = []  # First prompt, instruction is in policy_system_prompt
+                    else:
+                        # Swap user and assistant roles for policy LLM
+                        _all_messages = deepcopy(all_messages)
+                        _all_messages = [
+                            {"role": "user" if msg["role"] == "assistant" else msg["role"], "content": msg["content"]}
+                            for msg in _all_messages
+                        ]
+                    policy_messages = [
+                        {"role": "system", "content": policy_system_prompt},
+                        # *_all_messages,  # all except the newest message
+                        # *get_policy_chat_messages(all_messages[-1]),  # formatted newest message
+                        *_all_messages,
+                        {"role": "user", "content": POLICY_HANDOFF_INSTRUCTION},
                     ]
-                policy_messages = [
-                    {"role": "system", "content": policy_system_prompt},
-                    # *_all_messages,  # all except the newest message
-                    # *get_policy_chat_messages(all_messages[-1]),  # formatted newest message
-                    *_all_messages,
-                    {"role": "user", "content": POLICY_HANDOFF_INSTRUCTION},
-                ]
-                try:
-                    policy_text, state_ids, state_action_ids, action_logprobs = (
-                        await self._generate_policy_chat(
-                            llm=llm,
-                            hf_tokenizer=hf_tokenizer,
-                            state=state,
-                            all_messages=policy_messages,
-                            max_tokens=max_tokens,
-                            temperature=temperature,
-                            tinker_timeout=self.tinker_timeout,
+                    try:
+                        policy_text, state_ids, state_action_ids, action_logprobs = (
+                            await self._generate_policy_chat(
+                                llm=llm,
+                                hf_tokenizer=hf_tokenizer,
+                                state=state,
+                                all_messages=policy_messages,
+                                max_tokens=max_tokens,
+                                temperature=temperature,
+                                tinker_timeout=self.tinker_timeout,
+                            )
                         )
-                    )
-                    assert "<final_response>" in policy_text and "</final_response>" in policy_text, (
-                        "Expected <final_response> tags in policy model generation"
-                    )
-                except Exception as e:
-                    logger.error("Policy chat generation failed: %s", e)
-                    done = True
-                    truncated = True
+                        assert "<final_response>" in policy_text and "</final_response>" in policy_text, (
+                            "Expected <final_response> tags in policy model generation"
+                        )
+                    except Exception as e:
+                        logger.error("Policy chat generation failed: %s", e)
+                        done = True
+                        truncated = True
 
-                    break
+                        break
 
-                if self.verbose and generation_id == 0 and sample_id == 0:
-                    rich_print(
-                        f"[bold cyan]Policy Generation:[/bold cyan]\n{policy_text}"
-                    )
+                    if self.verbose and generation_id == 0 and sample_id == 0:
+                        rich_print(
+                            f"[bold cyan]Policy Generation:[/bold cyan]\n{policy_text}"
+                        )
 
-                # 3. Query Claude — policy chat is prepended to the per-turn prompt
-                policy_answer = (
-                    policy_text.split("<final_response>")[1].split("</final_response>")[0]
-                ).strip()
-                policy_messages = [{"role": "user", "content": policy_text}]  # Save full text for replay buffer
+                    # 3. Query Claude — policy chat is prepended to the per-turn prompt
+                    policy_answer = (
+                        policy_text.split("<final_response>")[1].split("</final_response>")[0]
+                    ).strip()
+                    policy_messages = [{"role": "user", "content": policy_text}]  # Save full text for replay buffer
+                else:
+                    policy_answer = None
+                    policy_messages = [{"role": "user", "content": ""}]  # dummy holder (we only do this during eval)
+                    state_action_ids = []
+                    state_ids = []
+                    action_logprobs = []
+
                 try:
                     claude_messages, _ = await self._get_claude_action(
                         client=client,

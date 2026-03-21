@@ -41,6 +41,8 @@ def get_args(is_tinker: bool = False) -> argparse.Namespace:
 
     ## Critic-Actor
     parser.add_argument("--num_actions", type=int)
+    parser.add_argument("--no_cria_prompt", action="store_true")
+    parser.add_argument("--no_train", action="store_true")
 
     ## Claude Agent SDK
     parser.add_argument("--model", type=str)

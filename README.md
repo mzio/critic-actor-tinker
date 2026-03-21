@@ -54,7 +54,8 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose
 
 # Standard Policy Gradient
 uv run python main_tinker.py \
@@ -66,7 +67,8 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose
 
 # Critic-Actor with Claude Sonnet 4.6
 uv run python main_tinker.py \
@@ -79,7 +81,36 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose
+
+# Critic-Actor Chat with Claude Haiku 4.5
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config chat_claude_handoff_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 8 \
+--num_substeps 4 \
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose
+
+# Critic-Actor Chat with Claude Haiku 4.5, no Cria prompt (eval only)
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config chat_claude_handoff_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 --no_cria_prompt \
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose 
+
 ```
 
 ### Snorkel Finance
@@ -96,7 +127,8 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 20 \
+--seed 42 --replicate 1 --verbose
 
 # Standard Policy Gradient
 uv run python main_tinker.py \
@@ -108,7 +140,8 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 20 \
+--seed 42 --replicate 1 --verbose
 
 # Critic-Actor with Claude Sonnet 4.6
 uv run python main_tinker.py \
@@ -121,7 +154,8 @@ uv run python main_tinker.py \
 --lora_rank 32 \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
---seed 42 --replicate 0 --verbose
+--eval_every 10 --max_turns 20 \
+--seed 42 --replicate 1 --verbose
 ```
 
 
@@ -138,7 +172,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
---seed 42 --replicate no_train --verbose --max_turns 20
+--seed 42 --replicate no_train --verbose --max_turns 10
 
 # Haiku Judge, Insurance
 uv run python main_tinker.py \
@@ -150,7 +184,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
---seed 42 --replicate no_train --verbose --max_turns 20
+--seed 42 --replicate no_train --verbose --max_turns 10
 
 # Sonnet Judge, Insurance
 uv run python main_tinker.py \

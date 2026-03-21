@@ -347,33 +347,34 @@ class RlTinkerTrainer(TinkerTrainer):
                 metrics.update(env.get_judge_metrics(prefix="train"))
 
 
-            # 1.1. Collect trajectories for training policy update
-            # _new_trajectories: list[Trajectory] = []
-            # for trajectory in new_trajectories["policy"]:
-            #     _new_trajectories.append(trajectory)
-            #     # self.replay_buffer.add_trajectory(trajectory)  # (potentially redundant with prepare_minibatch)
-            # # self.save_replay_buffer(replay_buffer=self.replay_buffer, best=False)
-            # new_trajectories = _new_trajectories
+            if not cfg.no_train:
+                # 1.1. Collect trajectories for training policy update
+                # _new_trajectories: list[Trajectory] = []
+                # for trajectory in new_trajectories["policy"]:
+                #     _new_trajectories.append(trajectory)
+                #     # self.replay_buffer.add_trajectory(trajectory)  # (potentially redundant with prepare_minibatch)
+                # # self.save_replay_buffer(replay_buffer=self.replay_buffer, best=False)
+                # new_trajectories = _new_trajectories
 
-            # 2. Update policy LLM with generated rollouts
-            data_D, prepare_minibatch_metrics = await self.prepare_minibatch(
-                new_trajectories=new_trajectories["policy"],
-                service_client=self.service_client,
-                model_name=cfg.model_name,
-                kl_penalty_coef=cfg.kl_penalty_coef,
-                kl_discount_factor=cfg.kl_discount_factor,
-            )
-            sampling_client, update_metrics = await self._do_train_step_and_get_sampling_client(
-                batch_idx=batch_idx,
-                training_client=self.training_client,
-                data_D=data_D,
-                prepare_minibatch_metrics=prepare_minibatch_metrics,
-                loss_fn="importance_sampling",
-                checkpoint_name=checkpoint_name,
-            )
+                # 2. Update policy LLM with generated rollouts
+                data_D, prepare_minibatch_metrics = await self.prepare_minibatch(
+                    new_trajectories=new_trajectories["policy"],
+                    service_client=self.service_client,
+                    model_name=cfg.model_name,
+                    kl_penalty_coef=cfg.kl_penalty_coef,
+                    kl_discount_factor=cfg.kl_discount_factor,
+                )
+                sampling_client, update_metrics = await self._do_train_step_and_get_sampling_client(
+                    batch_idx=batch_idx,
+                    training_client=self.training_client,
+                    data_D=data_D,
+                    prepare_minibatch_metrics=prepare_minibatch_metrics,
+                    loss_fn="importance_sampling",
+                    checkpoint_name=checkpoint_name,
+                )
+                metrics.update(update_metrics)
 
             # Log metrics
-            metrics.update(update_metrics)
             metrics["time/total"] = time.time() - t_start
             self.ml_logger.log_metrics(metrics, step=batch_idx)
 
