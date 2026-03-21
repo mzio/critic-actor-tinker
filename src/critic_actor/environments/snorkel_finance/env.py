@@ -229,13 +229,14 @@ class SnorkelFinanceEnv(Environment):
             }
         )
 
-    def shuffle(self, seed: int | None = None) -> None:
+    def shuffle(self, seed: int | None = None, split: str | None = None) -> None:
         if seed is None:
             seed = self.seed
         np.random.seed(seed)
-        indices = np.arange(len(self.datasets[self.split]))
+        split = split or self.split
+        indices = np.arange(len(self.datasets[split]))
         np.random.shuffle(indices)
-        self.datasets[self.split] = self.datasets[self.split][indices]
+        self.datasets[split] = self.datasets[split][indices]
 
     def reset(
         self,
@@ -382,7 +383,7 @@ class SnorkelFinanceEnv(Environment):
 
         # Update timesteps
         timestep += 1
-        if timestep >= self.max_turns:
+        if timestep >= self.max_turns and not done:
             truncated = True
             done = True
             env_messages.append(
@@ -557,9 +558,10 @@ class SnorkelFinanceEnv(Environment):
 
         # Update timesteps
         timestep += 1
-        if timestep >= self.max_turns:
+        if timestep >= self.max_turns and not done:
             truncated = True
             done = True
+            reward = -1.0
             env_messages.append(
                 {
                     "role": "user",

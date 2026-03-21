@@ -67,6 +67,19 @@ uv run python main_tinker.py \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
 --seed 42 --replicate 0 --verbose
+
+# Critic-Actor with Claude Sonnet 4.6
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 8 \
+--num_substeps 4 \
+--seed 42 --replicate 0 --verbose
 ```
 
 ### Snorkel Finance
@@ -96,5 +109,119 @@ uv run python main_tinker.py \
 --batch_size 8 --group_size 8 \
 --num_substeps 4 \
 --seed 42 --replicate 0 --verbose
+
+# Critic-Actor with Claude Sonnet 4.6
+uv run python main_tinker.py \
+--env_config finqa/reasoning_haiku \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 8 \
+--num_substeps 4 \
+--seed 42 --replicate 0 --verbose
+```
+
+
+### Eval-only Runs
+
+```bash
+# Haiku Judge, Insurance
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config cria_claude_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
+
+# Haiku Judge, Insurance
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
+
+# Sonnet Judge, Insurance
+uv run python main_tinker.py \
+--env_config insurance/default \
+--generator_config cria_claude_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
+
+# Sonnet Judge, Insurance
+uv run python main_tinker.py \
+--env_config insurance/default \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
+
+# Haiku Judge, Finance Reasoning
+uv run python main_tinker.py \
+--env_config finqa/reasoning_haiku \
+--generator_config cria_claude_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
+
+# Haiku Judge, Finance Reasoning
+uv run python main_tinker.py \
+--env_config finqa/reasoning_haiku \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose
+
+# Sonnet Judge, Finance Reasoning
+uv run python main_tinker.py \
+--env_config finqa/reasoning \
+--generator_config cria_claude_haiku \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose
+
+# Sonnet Judge, Finance Reasoning
+uv run python main_tinker.py \
+--env_config finqa/reasoning \
+--generator_config cria_claude_sonnet \
+--effort low \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 1 --group_size 1 --num_substeps 1 \
+--seed 42 --replicate no_train --verbose --max_turns 20
 ```
 

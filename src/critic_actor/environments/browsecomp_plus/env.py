@@ -634,7 +634,7 @@ class BrowseCompPlusSearchEnv(Environment):
 
         # Update timesteps, fail if too many turns
         timestep += 1
-        if timestep >= self.max_turns:
+        if timestep >= self.max_turns and not done:
             truncated = True
             done = True
             env_messages.append({"role": "user", "content": self.truncation_message})

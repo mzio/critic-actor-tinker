@@ -26,7 +26,7 @@ num_train_samples: 63  # 47
 num_val_samples: 16  # 16
 num_test_samples: 1  # 6  # 16
 
-max_turns: 50
+max_turns: 30
 num_tries: 1
 eval_num_tries: 1
 seed: 0

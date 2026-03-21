@@ -66,6 +66,9 @@ class EpisodeStep(BaseModel):
     # Maybe filter on complete generations
     is_complete: bool = True
 
+    # Alternative state_action tokens to pick
+    other_state_action_tokens: list[list[int]] | None = None
+
 
 class Trajectory:
     """

@@ -33,6 +33,10 @@ def get_generator_constructor(
         from .cria_claude import CriticActorClaudeGenerator
         return partial(CriticActorClaudeGenerator, **kwargs)
 
+    if name in ["chat_claude"]:
+        from .chat_claude import ChatClaudeGenerator
+        return partial(ChatClaudeGenerator, **kwargs)
+
     else:
         raise NotImplementedError(f"Sorry, generator {name} is not implemented yet.")
 

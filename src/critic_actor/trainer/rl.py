@@ -112,65 +112,77 @@ class RlTinkerTrainer(TinkerTrainer):
                     + trajectory.post_rollout_episode_steps
                 )
                 for episode_step in _all_trajectory_episode_steps:
-                    sa_input_ids = episode_step.state_action_tokens
-                    input_tokens = sa_input_ids[:-1]
-                    target_tokens = sa_input_ids[1:]
-                    act_logprobs = (
-                        episode_step.old_logprobs
-                    )  # logprob for predicting each action token
+                    # sa_input_ids = episode_step.state_action_tokens
+                    advantage = episode_step.advantage
 
-                    target_state_len = episode_step.state_len - 1
-                    target_advantage = (
-                        episode_step.advantage
-                    )  # for now assume the same advantage for all tokens
+                    if (  # hard-coded hack for the cria case
+                        episode_step.other_state_action_tokens is not None and advantage < 0
+                    ):
+                        all_sa_input_ids = episode_step.other_state_action_tokens
+                        target_advantage = [-advantage] * len(all_sa_input_ids)
+                    else:
+                        all_sa_input_ids = [episode_step.state_action_tokens]
+                        target_advantage = [advantage] * len(all_sa_input_ids)
 
-                    padded_logprobs = [0.0] * target_state_len + act_logprobs
-                    padded_advantages = [0.0] * target_state_len + [target_advantage] * len(
-                        act_logprobs
-                    )
-                    padded_mask = [0.0] * target_state_len + [1.0] * len(act_logprobs)
+                    for _idx, sa_input_ids in enumerate(all_sa_input_ids):
+                        sa_advantage = target_advantage[_idx]
+                        input_tokens = sa_input_ids[:-1]
+                        target_tokens = sa_input_ids[1:]
+                        act_logprobs = (
+                            episode_step.old_logprobs   # bugged here? because should match other_state_action tokens then
+                        )  # logprob for predicting each action token
 
-                    try:
-                        assert (
-                            len(input_tokens)
-                            == len(padded_logprobs)
-                            == len(padded_advantages)
-                            == len(target_tokens)
+                        target_state_len = episode_step.state_len - 1
+                        target_advantage = sa_advantage
+                        # ^for now assume the same advantage for all tokens
+
+                        padded_logprobs = [0.0] * target_state_len + act_logprobs
+                        padded_advantages = [0.0] * target_state_len + [target_advantage] * len(
+                            act_logprobs
                         )
-                    except AssertionError as e:
-                        logger.error(
-                            "Length mismatch:"
-                            "\n\tinput=%d"
-                            "\n\tlogprobs=%d"
-                            "\n\tadvantages=%d"
-                            "\n\ttargets=%d",
-                            len(input_tokens),
-                            len(padded_logprobs),
-                            len(padded_advantages),
-                            len(target_tokens),
-                        )
-                        breakpoint()
-                        raise e
+                        padded_mask = [0.0] * target_state_len + [1.0] * len(act_logprobs)
 
-                    metadata_D.append(
-                        {
-                            "sample_id": episode_step.unique_data_sample_id,
-                            "generation_id": episode_step.generation_id,
-                        }
-                    )
-                    data_D.append(
-                        Datum(
-                            model_input=ModelInput.from_ints(input_tokens),
-                            loss_fn_inputs={
-                                "target_tokens": TensorData.from_torch(torch.tensor(target_tokens)),
-                                "logprobs": TensorData.from_torch(torch.tensor(padded_logprobs)),
-                                "advantages": TensorData.from_torch(
-                                    torch.tensor(padded_advantages)
-                                ),
-                                "mask": TensorData.from_torch(torch.tensor(padded_mask)),  # for KL
-                            },
+                        try:
+                            assert (
+                                len(input_tokens)
+                                == len(padded_logprobs)
+                                == len(padded_advantages)
+                                == len(target_tokens)
+                            )
+                        except AssertionError as e:
+                            logger.error(
+                                "Length mismatch:"
+                                "\n\tinput=%d"
+                                "\n\tlogprobs=%d"
+                                "\n\tadvantages=%d"
+                                "\n\ttargets=%d",
+                                len(input_tokens),
+                                len(padded_logprobs),
+                                len(padded_advantages),
+                                len(target_tokens),
+                            )
+                            breakpoint()
+                            raise e
+
+                        metadata_D.append(
+                            {
+                                "sample_id": episode_step.unique_data_sample_id,
+                                "generation_id": episode_step.generation_id,
+                            }
                         )
-                    )
+                        data_D.append(
+                            Datum(
+                                model_input=ModelInput.from_ints(input_tokens),
+                                loss_fn_inputs={
+                                    "target_tokens": TensorData.from_torch(torch.tensor(target_tokens)),
+                                    "logprobs": TensorData.from_torch(torch.tensor(padded_logprobs)),
+                                    "advantages": TensorData.from_torch(
+                                        torch.tensor(padded_advantages)
+                                    ),
+                                    "mask": TensorData.from_torch(torch.tensor(padded_mask)),  # for KL
+                                },
+                            )
+                        )
 
         # Incorporate KL penalty if configured
         # - Copied from https://github.com/thinking-machines-lab/tinker-cookbook/blob/22483a6b04400f79da13557a8229bc98b309b026/tinker_cookbook/rl/train.py#L763

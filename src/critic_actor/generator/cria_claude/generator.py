@@ -3,6 +3,7 @@ Critic-Actor Generator with Claude (via Claude Agent SDK)
 """
 
 import asyncio
+import json
 import logging
 from copy import deepcopy
 from typing import Any
@@ -212,36 +213,50 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                                 # Check number of actions matches
                                 _messages = action.arguments["messages"]
                                 if len(_messages) != self.num_actions:
-                                    incorrect_num_actions = True
-                                    raise ValueError(
-                                        f"Expected {self.num_actions} messages, got {len(action.arguments['messages'])}"
-                                    )
+                                    if isinstance(_messages, str):
+                                        try:
+                                            _messages = json.loads(_messages)
+                                            if len(_messages) != self.num_actions:
+                                                raise ValueError(
+                                                    f"Expected {self.num_actions} messages, got {len(_messages)}"
+                                                )
+                                            incorrect_num_actions = False
+                                        except Exception as e:
+                                            incorrect_num_actions = True
+                                            raise e
+                                    else:
+                                        incorrect_num_actions = True
+                                        raise ValueError(
+                                            f"Expected {self.num_actions} messages, got {len(action.arguments['messages'])}"
+                                        )
                                 for _msg in _messages:
                                     if "<tool_call>" not in _msg["tool_call"] or "</tool_call>" not in _msg["tool_call"]:
                                         incorrect_tool_format = True
                                         raise ValueError(
                                             f"Expected tool call format, got {_msg['tool_call']} (missing <tool_call> or </tool_call>)"
                                         )
-                                cria_actions.extend(action.arguments["messages"])  # Should be structured output
+                                cria_actions.extend(_messages)  # Should be structured output
                                 break
                     except Exception as e:
                         logger.error(
                             "Error in sample_client_response (%s): %s", e.__class__.__name__, e
                         )
-                        if incorrect_num_actions:
-                            content = f"Sorry, incorrect number of actions (needed {self.num_actions})! Please try again."
-                        elif incorrect_tool_format:
-                            content = (
-                                "Sorry, incorrect tool call format! Need proper <tool_call> and </tool_call> tags."
-                                " Please try again."
-                            )
-                        else:
-                            content = "Sorry, response not parsed correctly! Please try again."
+                        # if incorrect_num_actions:
+                        #     content = f"Sorry, incorrect number of actions (needed {self.num_actions})! Please try again."
+                        #     content += f"\n\n{e.__class__.__name__}: {e}"
+                        # elif incorrect_tool_format:
+                        #     content = (
+                        #         "Sorry, incorrect tool call format! Need proper <tool_call> and </tool_call> tags."
+                        #         " Please try again."
+                        #     )
+                        # else:
+                        #     content = "Sorry, response not parsed correctly! Please try again."
+                        content = f"Sorry, response not parsed correctly! Please try again.\n\n{e.__class__.__name__}: {e}"
                         new_messages.append({
                             "role": "user", "content": content
                         })
                         num_attempts += 1
-                        if num_attempts >= 3:
+                        if num_attempts >= 10:
                             done = True
                             reward = -1.0
                             truncated = True
@@ -347,7 +362,11 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                     truncated = True
                     break
                 best_choice_idx = np.argmax(all_cls_logprobs)
-                model_messages = assistant_messages[best_choice_idx]
+                try:
+                    model_messages = assistant_messages[best_choice_idx]
+                except Exception as e:
+                    print(f"Error in assistant_messages[best_choice_idx]: {e.__class__.__name__}: {e}")
+                    breakpoint()
                 parsed_actions = get_actions(model_messages)
 
                 # Step thru environment
@@ -370,6 +389,10 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                     }
                     for msg in next_state.new_messages
                 ]
+                other_completion_ids = [
+                    cria_completion_ids[_idx] for _idx in range(self.num_actions) if _idx != best_choice_idx
+                ]
+                other_completion_ids = other_completion_ids if len(other_completion_ids) > 0 else None
                 episode_steps.append(
                     EpisodeStep(
                         # Note we don't use [state, action, next_obs, tools] for training
@@ -379,6 +402,7 @@ class CriticActorClaudeGenerator(TinkerGenerator):
                         next_obs=next_obs,  # list[dict[str, str]]
                         tools=state.tools,
                         state_action_tokens=cria_completion_ids[best_choice_idx],
+                        other_state_action_tokens=other_completion_ids,
                         state_len=cria_prefix_len,
                         old_logprobs=[all_cls_logprobs[best_choice_idx]],
                         # Should also figure out how to incorporate the other options for training

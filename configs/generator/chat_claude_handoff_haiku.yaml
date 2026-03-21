@@ -1,0 +1,18 @@
+# Chat Claude Generator (handoff variant): policy LLM writes a structured
+# handoff note (situation, key findings, recommended action) that is injected
+# into Claude's prompt to guide its action.
+name: "chat_claude"
+prompt_template_name: "handoff"
+
+# Claude Agent SDK options
+model: "claude-haiku-4-5"
+permission_mode: "default"
+effort: "low"
+max_agent_turns: 1
+
+discount_factor: 0.9
+mean_center: false
+
+verbose: false
+streamer: false
+debug: false

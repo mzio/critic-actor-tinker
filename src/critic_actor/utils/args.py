@@ -49,7 +49,8 @@ def get_args(is_tinker: bool = False) -> argparse.Namespace:
     parser.add_argument("--max_agent_turns", type=int)
     parser.add_argument("--use_claude_tools", action="store_true")
 
-    ## Environment    
+    ## Environment
+    parser.add_argument("--max_turns", type=int)
     parser.add_argument(
         "--num_fewshots",
         type=int,
