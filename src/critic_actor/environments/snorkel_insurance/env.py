@@ -319,7 +319,8 @@ class SnorkelInsuranceEnv(Environment):
         split = split or self.split
         indices = np.arange(len(self.datasets[split]))
         np.random.shuffle(indices)
-        self.datasets[split] = self.datasets[split][indices]
+        indices = indices.tolist()
+        self.datasets[split] = self.datasets[split].select(indices)
 
     def reset(
         self,

@@ -395,7 +395,8 @@ class BrowseCompPlusSearchEnv(Environment):
         np.random.seed(seed)
         indices = np.arange(len(self.datasets[self.split]))
         np.random.shuffle(indices)
-        self.datasets[self.split] = self.datasets[self.split][indices]
+        indices = indices.tolist()
+        self.datasets[self.split] = self.datasets[self.split].select(indices)
 
     def reset(
         self,
