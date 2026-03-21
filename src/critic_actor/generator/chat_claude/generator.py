@@ -52,7 +52,6 @@ from .prompts import (
 logger = logging.getLogger(__name__)
 
 
-
 POLICY_HANDOFF_INSTRUCTION = """
 
 Now, you are handing off this task to a colleague who will execute the next step.

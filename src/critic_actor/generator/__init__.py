@@ -37,6 +37,10 @@ def get_generator_constructor(
         from .chat_claude import ChatClaudeGenerator
         return partial(ChatClaudeGenerator, **kwargs)
 
+    if name in ["chat_openai"]:
+        from .chat_openai import ChatOpenAIGenerator
+        return partial(ChatOpenAIGenerator, **kwargs)
+
     else:
         raise NotImplementedError(f"Sorry, generator {name} is not implemented yet.")
 

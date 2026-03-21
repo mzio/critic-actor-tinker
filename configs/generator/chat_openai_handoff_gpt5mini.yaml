@@ -1,0 +1,21 @@
+# Chat OpenAI Generator: policy LLM generates a chat message (tip / reflection)
+# that is injected into GPT-5-mini's prompt to guide its action.
+name: "chat_openai"
+prompt_template_name: "handoff"
+
+# OpenAI options
+openai_model: "gpt-5-mini"
+openai_base_url: null
+openai_generation_config: {}
+
+# Tinker options
+tinker_timeout: 300
+no_cria_prompt: false
+continue_prompt: "Okay, let me think about"
+
+discount_factor: 0.9
+mean_center: false
+
+verbose: false
+streamer: false
+debug: false

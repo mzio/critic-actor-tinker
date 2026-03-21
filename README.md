@@ -68,20 +68,6 @@ _repo/data/benchmark/finqa.csv _repo/data/benchmark/finqa_reasoning.csv benchmar
 ### Snorkel Insurance
 
 ```bash
-# Critic-Actor with Claude Haiku 4.5
-uv run python main_tinker.py \
---env_config insurance/default_haiku \
---generator_config cria_claude_haiku \
---effort low \
---trainer_config pg \
---replay_buffer_config default \
---model_name Qwen/Qwen3-4B-Instruct-2507 \
---lora_rank 32 \
---batch_size 8 --group_size 4 \
---num_substeps 4 \
---eval_every 10 --max_turns 10 \
---seed 42 --replicate 1 --verbose
-
 # Standard Policy Gradient
 uv run python main_tinker.py \
 --env_config insurance/default_haiku \
@@ -91,7 +77,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 10 \
 --seed 42 --replicate 1 --verbose
 
@@ -105,7 +91,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 10 \
 --seed 42 --replicate 1 --verbose
 
@@ -119,7 +105,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 10 \
 --seed 42 --replicate 1 --verbose
 
@@ -155,20 +141,6 @@ uv run python main_tinker.py \
 ### Snorkel Finance
 
 ```bash
-# Critic-Actor with Claude Haiku 4.5
-uv run python main_tinker.py \
---env_config finqa/reasoning \
---generator_config cria_claude_haiku \
---effort low \
---trainer_config pg \
---replay_buffer_config default \
---model_name Qwen/Qwen3-4B-Instruct-2507 \
---lora_rank 32 \
---batch_size 8 --group_size 4 \
---num_substeps 4 \
---eval_every 10 --max_turns 20 \
---seed 42 --replicate 1 --verbose
-
 # Standard Policy Gradient
 uv run python main_tinker.py \
 --env_config finqa/reasoning \
@@ -178,7 +150,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 20 \
 --seed 42 --replicate 1 --verbose
 
@@ -192,7 +164,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 20 \
 --seed 42 --replicate 1 --verbose
 
@@ -206,7 +178,7 @@ uv run python main_tinker.py \
 --model_name Qwen/Qwen3-4B-Instruct-2507 \
 --lora_rank 32 \
 --batch_size 8 --group_size 4 \
---num_substeps 4 \
+--num_substeps 1 \
 --eval_every 10 --max_turns 20 \
 --seed 42 --replicate 1 --verbose
 
@@ -339,3 +311,79 @@ uv run python main_tinker.py \
 --seed 42 --replicate no_train --verbose --max_turns 20
 ```
 
+
+
+### Snorkel Insurance (GPT-5-mini)
+
+```bash
+# Critic-Actor Chat with GPT-5-mini (GPT-5-mini judge)
+uv run python main_tinker.py \
+--env_config insurance/default_gpt5mini \
+--generator_config chat_openai_gpt5mini \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 4 \
+--num_substeps 1 \
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1_1 --verbose
+
+# Critic-Actor Chat with GPT-5-mini (Haiku judge)
+uv run python main_tinker.py \
+--env_config insurance/default_haiku \
+--generator_config chat_openai_gpt5mini \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 4 \
+--num_substeps 1 \
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1 --verbose
+
+# Critic-Actor Chat with GPT-5-mini, no Cria prompt (eval only)
+uv run python main_tinker.py \
+--env_config insurance/default_gpt5mini \
+--generator_config chat_openai_gpt5mini \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 8 --group_size 4 --num_substeps 1 --no_cria_prompt \
+--no_train \
+--eval_every 10 --max_turns 10 \
+--seed 42 --replicate 1_1 --verbose
+```
+
+Note in the above that `--generator_config chat_openai_gpt5mini` above is the same as `chat_openai_handoff_gpt5mini` (Claude just didn't name it correctly).
+
+### Snorkel Finance (GPT-5-mini)
+
+```bash
+# Critic-Actor Chat with GPT-5-mini (Sonnet judge)
+uv run python main_tinker.py \
+--env_config finqa/reasoning \
+--generator_config chat_openai_handoff_gpt5mini \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--batch_size 8 --group_size 4 \
+--num_substeps 1 \
+--eval_every 10 --max_turns 20 \
+--seed 42 --replicate 1 --verbose
+
+# Critic-Actor Chat with GPT-5-mini, no Cria prompt (eval only)
+uv run python main_tinker.py \
+--env_config finqa/reasoning \
+--generator_config chat_openai_gpt5mini \
+--trainer_config pg \
+--replay_buffer_config default \
+--model_name Qwen/Qwen3-4B-Instruct-2507 \
+--lora_rank 32 \
+--num_actions 1 --num_batches 1 --batch_size 8 --group_size 4 --num_substeps 1 --no_cria_prompt \
+--no_train \
+--eval_every 10 --max_turns 20 \
+--seed 42 --replicate 1_1 --verbose
+```

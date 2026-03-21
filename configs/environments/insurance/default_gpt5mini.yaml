@@ -1,0 +1,35 @@
+# Snorkel Insurance - Underwriting Benchmark
+# Same as default_haiku but with GPT-5-mini as the grader/judge
+name: "snorkel_insurance"
+is_async: true
+
+task: "default"
+task_data_path: "./data/snorkel_insurance/task_data/downsampled_task_set.json"
+data_path: "./data/snorkel_insurance"
+
+grader_model_config:
+  name: "openai"
+  is_async: true
+  model_config:
+    model: "gpt-5-mini"
+grader_model_samples: 1
+grader_model_verbose: false
+
+hide_observations: false
+hidden_obs_content: "..."
+first_obs_to_show: 2
+last_obs_to_show: 1
+
+# 300 total: 280 train / 20 val / 1 test
+num_train_samples: 280
+num_val_samples: 20
+num_test_samples: 1
+
+max_turns: 20
+num_tries: 1
+eval_num_tries: 1
+seed: 0
+split: "train"
+system_prompt: null  # uses default from prompts.py
+truncation_message: "Sorry, you have reached the maximum number of steps. Please try again."
+verbose: false
