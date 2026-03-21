@@ -51,6 +51,14 @@ cp _repo/data/benchmark/finqa.csv benchmark/
 cp _repo/data/benchmark/finqa_reasoning.csv benchmark/
 ```
 
+Or all together now:
+
+```bash
+mkdir -p data/snorkel_finance && cd data/snorkel_finance && git clone
+https://github.com/snorkel-ai/FinQABenchmark _repo && cp -r _repo/data/raw ./raw && mkdir -p benchmark && cp
+_repo/data/benchmark/finqa.csv _repo/data/benchmark/finqa_reasoning.csv benchmark/
+```
+
 Each CSV has columns: `id`, `company`, `question` (or `user_query`), `answer`.
 
 Expected structure now:

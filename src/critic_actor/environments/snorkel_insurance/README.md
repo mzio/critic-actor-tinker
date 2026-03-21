@@ -33,6 +33,15 @@ mkdir -p task_data
 cp _repo/task_data/downsampled_task_set.json task_data/
 ```
 
+Or all together now:
+
+```bash
+mkdir -p data/snorkel_insurance && cd data/snorkel_insurance && git clone 
+https://github.com/snorkel-ai/multi-turn-insurance-underwriting-benchmark-generation _repo && cp -r
+_repo/resources ./resources && cp -r _repo/tool_data ./tool_data && mkdir -p task_data && cp
+_repo/task_data/downsampled_task_set.json task_data
+```
+
 Expected structure:
 
 ```
