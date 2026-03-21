@@ -1,0 +1,11 @@
+# Default Tinker Generator
+name: "default"
+enable_thinking: null
+continue_prompt: "Okay, let me think"
+
+discount_factor: 0.9
+mean_center: false
+
+verbose: false
+streamer: false
+debug: false

@@ -132,6 +132,7 @@ class ChatClaudeGenerator(TinkerGenerator):
         # Tinker options
         tinker_timeout: int = 300,
         no_cria_prompt: bool = False,
+        continue_prompt: str | None = "Okay, let me think about",
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -161,7 +162,7 @@ class ChatClaudeGenerator(TinkerGenerator):
         # Tinker
         self.tinker_timeout = tinker_timeout
         self.no_cria_prompt = no_cria_prompt
-
+        self.continue_prompt = continue_prompt
 
     def get_cost_metrics(self) -> dict[str, float]:
         """Return cost metrics and reset batch cost."""
@@ -212,7 +213,7 @@ class ChatClaudeGenerator(TinkerGenerator):
         max_tokens: int,
         temperature: float,
         tinker_timeout: int | None,
-        continue_prompt: str | None = "Okay, let me think about"
+        continue_prompt: str | None = None,
     ) -> tuple[str, list[int], list[int], list[float]]:
         """
         Have the policy LLM generate a chat message (tip / reflection).
@@ -224,6 +225,7 @@ class ChatClaudeGenerator(TinkerGenerator):
             action_logprobs: log-probabilities for generated tokens
         """
         tinker_timeout = tinker_timeout or self.tinker_timeout
+        continue_prompt = continue_prompt or self.continue_prompt
 
         # Tokenize state (with generation prompt for the assistant turn)
         all_messages = deepcopy(all_messages)

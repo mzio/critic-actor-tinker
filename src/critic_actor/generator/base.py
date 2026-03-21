@@ -70,6 +70,7 @@ class TinkerGenerator:
         last_replay_buffer_path: str | None = None,
         debug: bool = False,
         context_window: int = DEFAULT_CONTEXT_WINDOW,
+        continue_prompt: str | None = None,
     ) -> None:
         self.llm = llm
         self.hf_tokenizer = hf_tokenizer
@@ -98,6 +99,7 @@ class TinkerGenerator:
         self.verbose = verbose
         self.debug = debug
         self.context_window = context_window
+        self.continue_prompt = continue_prompt  # If True, seed the generator with this text to continue
 
     def _init_identifiers(self) -> tuple[str | None, str | None]:
         """
@@ -202,10 +204,15 @@ class TinkerGenerator:
                 replay_buffer=self.replay_buffer,
             )
             # Tokenize the current state for generation
+            if self.continue_prompt:
+                # For now, fine to just add the continue prompt for model to complete in all generations
+                state_messages.append({"role": "assistant", "content": self.continue_prompt})
+            
             state_ids: list[int] = hf_tokenizer.apply_chat_template(
                 conversation=state_messages,
                 tools=state.tools,
-                add_generation_prompt=True,
+                add_generation_prompt=self.continue_prompt is None,
+                continue_final_message=self.continue_prompt is not None,
                 enable_thinking=self.enable_thinking,
                 tokenize=True,
                 return_dict=False,
@@ -273,7 +280,12 @@ class TinkerGenerator:
 
             # Decode the response
             parsed_message, is_complete = renderer.parse_response(sampled_tokens)
-            model_messages = [{"role": "assistant", "content": parsed_message["content"]}]
+            model_content = parsed_message["content"]
+            if isinstance(model_content, list):
+                model_content = "\n".join(p["text"] for p in model_content if p.get("type") == "text")
+            if self.continue_prompt is not None:
+                model_content = self.continue_prompt + model_content
+            model_messages = [{"role": "assistant", "content": model_content}]
             parsed_actions: list[ActionFromLLM] = get_actions(model_messages)
 
             # Recompute logprobs over parsed actions
